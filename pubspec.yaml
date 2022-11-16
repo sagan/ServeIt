@@ -33,6 +33,7 @@ dependencies:
   flutter_logs: ^2.1.4
   file_picker: ^5.2.2
   mime: ^1.0.2
+  device_info_plus: ^8.0.0
   
 
 dev_dependencies:

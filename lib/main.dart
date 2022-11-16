@@ -7,6 +7,7 @@ import 'package:flutter_logs/flutter_logs.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:mime/mime.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -87,6 +88,27 @@ class _HomeState extends State<Home> {
     setUpLogs();
   }
 
+  Future<bool> requestPermission() async {
+    var androidInfo = await DeviceInfoPlugin().androidInfo;
+    var release = int.parse(androidInfo.version.release);
+    Permission permission;
+    if (release < 11) {
+      permission = Permission.storage;
+    } else {
+      permission = Permission.manageExternalStorage;
+    }
+    if (await permission.isGranted) {
+      return true;
+    } else {
+      var result = await permission.request();
+      if (result == PermissionStatus.granted) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
   void getWifiIP() async {
     wifiIPv4 = null;
     //Handling Wifi IP Address
@@ -109,6 +131,8 @@ class _HomeState extends State<Home> {
 
   void _selectFolder() async {
     try {
+      bool ok = await requestPermission();
+      debugPrint("Android external storage permission: " + ok.toString());
       String? path = await FilePicker.platform.getDirectoryPath();
       if (path != null) {
         baseDir = path;
