@@ -212,7 +212,8 @@ class _HomeState extends State<Home> {
               'Received request ${request.method}: ${request.uri.path}');
           switch (request.method) {
             case 'GET':
-              String currDir = baseDir + Uri.decodeFull(request.uri.path);
+              String relativeDir = Uri.decodeFull(request.uri.path);
+              String currDir = baseDir + relativeDir;
               if (File(currDir + "index.html").existsSync()) {
                 currDir += "index.html";
               }
@@ -246,7 +247,18 @@ class _HomeState extends State<Home> {
               //If request is for a directory, add a link so that user can access the directory
               else if (Directory(currDir).existsSync()) {
                 String baseResponse =
-                    "<html><head><h1><p>Directory listing</p></h1></head><body>";
+                    "<html><head><meta charset=\"utf-8\" /></head><body><h1>$relativeDir</h1><ul>";
+                if (!relativeDir.endsWith("/")) {
+                  request.response.redirect(new Uri(path: relativeDir + "/"));
+                  break;
+                }
+                if (relativeDir != "/") {
+                  String parentDir =
+                      relativeDir.substring(0, relativeDir.length - 1);
+                  parentDir =
+                      parentDir.substring(0, parentDir.lastIndexOf("/"));
+                  baseResponse += '<li><a href="$parentDir/">..</a>';
+                }
                 List dirFiles = getDir(currDir);
                 for (var i = 0; i < dirFiles.length; i++) {
                   List fileNamePath = dirFiles[i].toString().split('/');
@@ -255,14 +267,13 @@ class _HomeState extends State<Home> {
                   fileName = fileName.substring(0, fileName.length - 1);
 
                   if (fileOrDir.contains('File')) //Current item is a File
-                    baseResponse = baseResponse +
-                        '<li><a href="${currDir + fileName}">$fileName</a>';
+                    baseResponse +=
+                        '<li><a href="${relativeDir + fileName}">$fileName</a>';
                   else //Current item is a directory
-                    baseResponse = baseResponse +
-                        '<li><a href="${currDir + fileName + '/'}">$fileName</a>';
+                    baseResponse +=
+                        '<li><a href="${relativeDir + fileName + '/'}">$fileName/</a>';
                 }
-                baseResponse = baseResponse +
-                    '</body><footer>Copyright &copy; Viki Inc 2021</footer></html>';
+                baseResponse += '</ul></body></html>';
                 request.response.headers.contentType =
                     new ContentType('text', 'html', charset: 'utf-8');
                 request.response.write(baseResponse);
